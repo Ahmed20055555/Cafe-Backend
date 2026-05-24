@@ -43,22 +43,32 @@ const seedInline = async () => {
 
 // ─── Connect ────────────────────────────────────────────────────────────────
 const connectDB = async () => {
-  // 1. Try real MongoDB first
+  // If already connected, skip
+  if (mongoose.connection.readyState === 1) return;
+
   const realUri = process.env.MONGODB_URI;
-  if (realUri && !realUri.includes('localhost') && !realUri.includes('127.0.0.1')) {
+
+  // 1. Try remote MongoDB (Atlas) first — required for Vercel/production
+  if (realUri) {
     try {
-      await mongoose.connect(realUri, { serverSelectionTimeoutMS: 5000 });
+      await mongoose.connect(realUri, { serverSelectionTimeoutMS: 8000 });
       console.log(`✅ MongoDB connected: ${mongoose.connection.host}`);
       await seedInline();
       return;
     } catch (err) {
-      console.error(`❌ Remote MongoDB failed: ${err.message}`);
+      console.error(`❌ MongoDB connection failed: ${err.message}`);
     }
   }
 
-  // 2. Try local MongoDB
+  // 2. On Vercel without MONGODB_URI — cannot proceed
+  if (process.env.VERCEL) {
+    console.error('❌ MONGODB_URI is required on Vercel. Set it in Environment Variables.');
+    return;
+  }
+
+  // 3. Try local MongoDB (dev only)
   try {
-    const localUri = realUri || 'mongodb://127.0.0.1:27017/cafe_management';
+    const localUri = 'mongodb://127.0.0.1:27017/cafe_management';
     await mongoose.connect(localUri, { serverSelectionTimeoutMS: 2000 });
     console.log(`✅ MongoDB (local) connected: ${mongoose.connection.host}`);
     await seedInline();
@@ -67,7 +77,7 @@ const connectDB = async () => {
     console.log('⚠️  Local MongoDB not found → starting In-Memory MongoDB...');
   }
 
-  // 3. Fallback: In-Memory MongoDB (dev only)
+  // 4. Fallback: In-Memory MongoDB (dev only)
   try {
     const { MongoMemoryServer } = require('mongodb-memory-server');
     let mongoServer;

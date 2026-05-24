@@ -25,7 +25,6 @@ router.post('/register', async (req, res) => {
         role: user.role,
         token
       }
-      // commit
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

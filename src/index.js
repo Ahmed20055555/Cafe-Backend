@@ -46,6 +46,11 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api', require('./routes/extras'));
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'Cafe Management API', status: 'running', timestamp: new Date().toISOString() });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -54,10 +59,16 @@ app.get('/api/health', (req, res) => {
 // Setup Socket.io
 setupSocket(io);
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`);
-  console.log(`📡 WebSocket server ready`);
-  console.log(`🔗 API: http://localhost:${PORT}/api\n`);
-});
+// Only listen when NOT on Vercel (Vercel uses serverless)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`\n🚀 Server running on port ${PORT}`);
+    console.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`);
+    console.log(`📡 WebSocket server ready`);
+    console.log(`🔗 API: http://localhost:${PORT}/api\n`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
