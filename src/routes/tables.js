@@ -31,6 +31,21 @@ router.get('/status/:number', async (req, res) => {
   }
 });
 
+// GET /api/tables/public/status - PUBLIC - get all table statuses
+router.get('/public/status', async (req, res) => {
+  try {
+    const tables = await Table.find().populate('currentSession');
+    const statuses = {};
+    tables.forEach(table => {
+      const isOccupied = table.status === 'occupied' && table.currentSession?.status === 'active';
+      statuses[table.number] = table.isBlocked ? 'blocked' : (isOccupied ? 'occupied' : 'available');
+    });
+    res.json({ success: true, data: statuses });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/tables
 router.get('/', protect, async (req, res) => {
   try {
