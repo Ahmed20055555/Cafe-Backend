@@ -1,10 +1,10 @@
 node_modules/
 .env
 .env.local
+.local_mongo_data/
 npm-debug.log
 yarn-error.log
 dist/
 build/
-uploads/
 Thumbs.db
 Desktop.ini
