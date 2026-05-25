@@ -189,7 +189,7 @@ router.patch('/:id/status', async (req, res) => {
 
       // Notify customer session with estimated time
       if (status === 'preparing' && estimatedMins) {
-        io.to(`session:${order.session}`).emit('order:preparing', {
+        io.to(`session:${order.session.toString()}`).emit('order:preparing', {
           orderId: order._id,
           orderNumber: order.orderNumber,
           tableNumber: order.tableNumber,
@@ -200,7 +200,7 @@ router.patch('/:id/status', async (req, res) => {
       }
 
       if (status === 'ready') {
-        io.to(`session:${order.session}`).emit('order:ready', {
+        io.to(`session:${order.session.toString()}`).emit('order:ready', {
           orderId: order._id,
           orderNumber: order.orderNumber,
           tableNumber: order.tableNumber,
