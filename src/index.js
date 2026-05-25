@@ -22,20 +22,38 @@ app.use(async (req, res, next) => {
 const server = http.createServer(app);
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  process.env.CLIENT_URL,
-].filter(Boolean);
+  "http://localhost:3000",
+  "https://cafe-frontend-sepia-ten.vercel.app"
+];
+
+// Apply CORS options globally
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.options("*", cors());
 
 const io = new Server(server, {
-  cors: { origin: allowedOrigins, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }
+  cors: { 
+    origin: allowedOrigins, 
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], 
+    credentials: true 
+  }
 });
 
 // Make io accessible to routes
 app.set('io', io);
 
-// Middleware
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+// Other Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use(morgan('dev'));
