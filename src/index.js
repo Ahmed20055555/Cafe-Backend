@@ -8,10 +8,17 @@ const path = require('path');
 const connectDB = require('./config/db');
 const setupSocket = require('./socket');
 
-// Connect to database
+// Connect to database initially
 connectDB();
 
 const app = express();
+
+// Ensure DB is connected before handling any request (crucial for Vercel Serverless)
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
 const server = http.createServer(app);
 
 const allowedOrigins = [
