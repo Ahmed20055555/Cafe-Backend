@@ -36,6 +36,11 @@ module.exports = function setupSocket(io) {
       io.emit('order:itemUpdate', data);
     });
 
+    // Handle customer alerting kitchen about delay
+    socket.on('order:alertKitchen', (data) => {
+      io.to('kitchen').emit('order:kitchenAlerted', data);
+    });
+
     // Handle bill request from customer
     socket.on('bill:request', (data) => {
       io.to('staff').emit('bill:requested', data);

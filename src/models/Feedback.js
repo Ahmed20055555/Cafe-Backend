@@ -21,6 +21,11 @@ const feedbackSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
+  customerName: {
+    type: String,
+    trim: true,
+    maxlength: 100
+  },
   foodRating: { type: Number, min: 1, max: 5 },
   serviceRating: { type: Number, min: 1, max: 5 },
   ambienceRating: { type: Number, min: 1, max: 5 }
