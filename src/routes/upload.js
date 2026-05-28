@@ -2,24 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { protect, authorize } = require('../middleware/auth');
 
-// Make sure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Setup storage
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename(req, file, cb) {
-    cb(null, `image-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
+// Setup memory storage for serverless environments (e.g. Vercel)
+const storage = multer.memoryStorage();
 
 const checkFileType = (file, cb) => {
   const filetypes = /jpg|jpeg|png|webp|gif/;
@@ -47,9 +33,9 @@ router.post('/', protect, authorize('admin'), upload.single('image'), (req, res)
       return res.status(400).json({ success: false, message: 'No image file provided' });
     }
     
-    // Return the URL path
-    const imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
-    res.json({ success: true, data: imagePath });
+    // Return base64 URL
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    res.json({ success: true, data: base64Image });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -61,8 +47,10 @@ router.post('/receipt', upload.single('receipt'), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    const receiptUrl = `http://localhost:5000/uploads/${req.file.filename}`;
-    res.json({ success: true, url: receiptUrl });
+    
+    // Return base64 URL
+    const base64Receipt = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    res.json({ success: true, url: base64Receipt });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
