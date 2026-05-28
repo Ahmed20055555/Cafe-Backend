@@ -117,12 +117,21 @@ router.post('/:id/pay', async (req, res) => {
       await loyalty.save();
     }
 
-    // End session (but do NOT close the table so it stays occupied)
+    // End session
     const session = await Session.findById(bill.session);
     if (session) {
       session.status = 'completed';
       session.endedAt = new Date();
       await session.save();
+
+      const table = await Table.findById(session.table);
+      if (table) {
+        table.status = 'cleaning';
+        table.currentSession = null;
+        await table.save();
+        const io = req.app.get('io');
+        if (io) io.emit('table:statusUpdate', table);
+      }
     }
 
     res.json({ success: true, data: bill });
