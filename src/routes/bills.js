@@ -32,14 +32,21 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const taxRate = parseFloat(process.env.TAX_RATE || 0.14);
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne() || {};
+    const taxRate = parseFloat(settings.taxRate || 0) / 100;
     const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
     const total = Math.round((subtotal + taxAmount) * 100) / 100;
+
+    const crypto = require('crypto');
+    const orderReference = 'IG-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
     const bill = await Bill.create({
       session: session._id, table: session.table, tableNumber: session.tableNumber,
       orders: session.orders.map(o => o._id), items: billItems,
-      subtotal, taxRate, taxAmount, total
+      subtotal, taxRate, taxAmount, total,
+      orderReference,
+      paymentMethod: req.body.paymentMethod || 'cash'
     });
 
     session.status = 'billing';
@@ -49,6 +56,40 @@ router.post('/', async (req, res) => {
     if (io) io.emit('bill:requested', { tableNumber: session.tableNumber, bill });
 
     res.status(201).json({ success: true, data: bill });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/bills/pending-receipts
+router.get('/pending-receipts', async (req, res) => {
+  try {
+    const bills = await Bill.find({ status: 'pending' })
+      .sort('createdAt');
+    res.json({ success: true, data: bills });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/bills/:id/receipt-url
+router.patch('/:id/receipt-url', async (req, res) => {
+  try {
+    const bill = await Bill.findById(req.params.id);
+    if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
+    
+    if (req.body.receiptUrl) bill.receiptUrl = req.body.receiptUrl;
+    if (req.body.paymentMethod) bill.paymentMethod = req.body.paymentMethod;
+    
+    await bill.save();
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('bill:receiptUploaded', bill);
+      io.emit('notification', { type: 'payment', message: `طاولة ${bill.tableNumber} رفعت إيصال دفع جديد.`, billId: bill._id });
+    }
+    
+    res.json({ success: true, data: bill });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -76,21 +117,12 @@ router.post('/:id/pay', async (req, res) => {
       await loyalty.save();
     }
 
-    // End session
+    // End session (but do NOT close the table so it stays occupied)
     const session = await Session.findById(bill.session);
     if (session) {
       session.status = 'completed';
       session.endedAt = new Date();
       await session.save();
-
-      const table = await Table.findById(session.table);
-      if (table) {
-        table.status = 'cleaning';
-        table.currentSession = null;
-        await table.save();
-        const io = req.app.get('io');
-        if (io) io.emit('table:statusUpdate', table);
-      }
     }
 
     res.json({ success: true, data: bill });

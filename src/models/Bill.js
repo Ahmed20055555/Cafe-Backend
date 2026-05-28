@@ -42,6 +42,7 @@ const billSchema = new mongoose.Schema({
     enum: ['pending', 'paid', 'cancelled'],
     default: 'pending'
   },
+  orderReference: { type: String, required: true },
   receiptUrl: { type: String },
   paidAt: { type: Date }
 }, {

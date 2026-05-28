@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 // PUT /api/settings - Admin only
 router.put('/', protect, authorize('admin'), async (req, res) => {
   try {
-    const { cafeName, primaryColor } = req.body;
+    const { cafeName, primaryColor, taxRate } = req.body;
     let settings = await Settings.findOne();
     if (!settings) {
       settings = new Settings();
@@ -27,6 +27,7 @@ router.put('/', protect, authorize('admin'), async (req, res) => {
     
     if (cafeName) settings.cafeName = cafeName;
     if (primaryColor) settings.primaryColor = primaryColor;
+    if (taxRate !== undefined) settings.taxRate = Number(taxRate);
     settings.updatedAt = Date.now();
     
     await settings.save();

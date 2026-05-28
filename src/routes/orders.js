@@ -59,12 +59,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'No valid items in order' });
     }
 
+    const Settings = require('../models/Settings');
+    const settings = await Settings.findOne() || {};
+    const taxRate = parseFloat(settings.taxRate || 0) / 100;
+
     // Check if there is an active order for this session
     let order = await Order.findOne({ session: session._id, status: { $in: ['pending', 'preparing'] } });
 
     if (order) {
       order.items.push(...orderItems);
-      order.calculateTotals();
+      order.calculateTotals(taxRate);
       if (order.status === 'preparing') {
         order.status = 'pending';
         order.estimatedReadyAt = undefined;
@@ -96,7 +100,7 @@ router.post('/', async (req, res) => {
       estimatedTime: 15
     });
 
-    order.calculateTotals();
+    order.calculateTotals(taxRate);
     await order.save();
 
     session.orders.push(order._id);

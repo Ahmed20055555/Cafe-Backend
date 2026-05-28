@@ -55,4 +55,17 @@ router.post('/', protect, authorize('admin'), upload.single('image'), (req, res)
   }
 });
 
+// POST /api/upload/receipt - public endpoint for receipt images (no auth needed)
+router.post('/receipt', upload.single('receipt'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    const receiptUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    res.json({ success: true, url: receiptUrl });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

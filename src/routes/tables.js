@@ -14,7 +14,7 @@ router.get('/status/:number', async (req, res) => {
       // Table doesn't exist yet — it will be auto-created on order
       return res.json({ success: true, data: { status: 'available', tableNumber: parseInt(req.params.number), exists: false } });
     }
-    const isOccupied = table.status === 'occupied' && table.currentSession?.status === 'active';
+    const isOccupied = table.status === 'occupied';
     res.json({
       success: true,
       data: {
@@ -37,7 +37,7 @@ router.get('/public/status', async (req, res) => {
     const tables = await Table.find().populate('currentSession');
     const statuses = {};
     tables.forEach(table => {
-      const isOccupied = table.status === 'occupied' && table.currentSession?.status === 'active';
+      const isOccupied = table.status === 'occupied';
       statuses[table.number] = table.isBlocked ? 'blocked' : (isOccupied ? 'occupied' : 'available');
     });
     res.json({ success: true, data: statuses });
